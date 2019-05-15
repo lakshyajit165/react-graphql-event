@@ -1,37 +1,63 @@
+
 const express = require('express');
 const bodyParser = require('body-parser');
-const grapqlHttp = require('express-graphql');
+const graphqlHttp = require('express-graphql');
 const { buildSchema } = require('graphql');
 
 const app = express();
 
+const events = [];
+
 app.use(bodyParser.json());
 
-app.use('/graphql',grapqlHttp({
+app.use(
+  '/graphql',
+  graphqlHttp({
     schema: buildSchema(`
-        type RootQuery{
-            events: [String!]!
+        type Event {
+          _id: ID!
+          title: String!
+          description: String!
+          price: Float!
+          date: String!
         }
-
-        type RootMutation{
-            createEvent(name: String): String
+        input EventInput {
+          title: String!
+          description: String!
+          price: Float!
+          date: String!
         }
-
-        schema{
+        type RootQuery {
+            events: [Event!]!
+        }
+        type RootMutation {
+            createEvent(eventInput: EventInput): Event
+        }
+        schema {
             query: RootQuery
             mutation: RootMutation
         }
     `),
     rootValue: {
-        events: () => {
-            return ['Romantic Cooking', 'Sailing', 'All Night Coding'];
-        },
-        createEvent: (args) => {
-            const eventName = args.name;
-            return eventName;
-        }
+      events: () => {
+        return events;
+      },
+      createEvent: args => {
+        const event = {
+          _id: Math.random().toString(),
+          title: args.eventInput.title,
+          description: args.eventInput.description,
+          price: +args.eventInput.price,
+          date: args.eventInput.date
+        };
+
+        console.log(event);
+        events.push(event);
+        return event;
+      }
     },
     graphiql: true
-}));
+  })
+);
 
 app.listen(3000);
